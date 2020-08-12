@@ -5,7 +5,7 @@ dependencies {
     implementation project(path: ':annotations')
     implementation 'com.squareup:javapoet:1.13.0'
     implementation 'com.google.auto.service:auto-service:1.0-rc7'
-    annotationProcessor 'com.google.auto.service:auto-service:1.0-rc7'
+    annotationProcessor 'com.google.auto.service:auto-service:1.0-rc7' // Gradle 5.0+ 必须加上去，否则无法生成代码(PS:不信就试试)
 }
 
 sourceCompatibility = "1.7"

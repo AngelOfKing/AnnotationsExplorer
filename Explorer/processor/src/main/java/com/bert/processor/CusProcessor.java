@@ -30,13 +30,13 @@ import javax.tools.JavaFileObject;
  * @UpdateAt: 2020/8/12 11:23 AM
  * @UpdateRemark: 更新说明
  * @Version: 1.0
- * @Description:
+ * @Description: 自定义的注解处理器
  */
 @AutoService(Processor.class) // 如果不加此行代码，该注解处理器不会生效(JVM在编译时不会加载)
 //@SupportedAnnotationTypes("com.bert.annotations.CusAnnotation")
 public class CusProcessor extends AbstractProcessor {
     private Filer filer;
-    // 设置使用JavaPoet还是String来生成Java文件
+    // 设置使用JavaPoet还是JavaWriter来生成Java文件
     private boolean useJPoet ;
 
 
@@ -129,7 +129,7 @@ public class CusProcessor extends AbstractProcessor {
     }
 
     /**
-     * 使用String来读写，容易出错(EventBus就是采用这种方式实现的)
+     * 使用JavaWriter来读写，容易出错(EventBus就是采用这种方式实现的)
      * @param packageName
      */
     public void useJavaFileObj(String packageName) {
