@@ -4,5 +4,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 }
 
-sourceCompatibility = "1.7"
-targetCompatibility = "1.7"
+
+// 否则无法使用net.ltgt.gradle.incap:incap的0.3版本
+// sourceCompatibility = "1.7"
+// targetCompatibility = "1.7"
