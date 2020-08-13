@@ -3,12 +3,14 @@
  * @version: 
  * @Date: 2020-08-12 11:10:16
  * @LastEditors: BertKing
- * @LastEditTime: 2020-08-13 16:04:04
+ * @LastEditTime: 2020-08-13 19:54:34
  * @FilePath: /undefined/Users/bertking/AnnotationsExplorer/README.md
  * @Description: 
 -->
 # AnnotationsExplorer
 Do you really know Annotation？
+
+关于此项目运行的任何问题，您都可以先到 [Issues](https://github.com/Bert-King/AnnotationsExplorer/issues) 里尝试获取有效信息.
 
 ---
 
@@ -212,5 +214,10 @@ public @interface SuppressLint {
     String[] value();
 }
 ```
+
+# 5.高阶知识点
+
+[注解的增量更新]()
+
 ---
 乘兴而来乎?...兴尽而归乎？...
