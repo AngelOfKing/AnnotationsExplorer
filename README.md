@@ -3,7 +3,7 @@
  * @version: 
  * @Date: 2020-08-12 11:10:16
  * @LastEditors: BertKing
- * @LastEditTime: 2020-08-13 19:54:34
+ * @LastEditTime: 2020-08-13 20:07:12
  * @FilePath: /undefined/Users/bertking/AnnotationsExplorer/README.md
  * @Description: 
 -->
@@ -217,7 +217,7 @@ public @interface SuppressLint {
 
 # 5.高阶知识点
 
-[注解的增量更新]()
+[注解的增量更新](https://github.com/Bert-King/AnnotationsExplorer/blob/master/Incremental%20annotation%20processing.mdwn)
 
 ---
 乘兴而来乎?...兴尽而归乎？...
