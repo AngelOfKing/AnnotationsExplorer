@@ -3,9 +3,83 @@
  * @version: 
  * @Date: 2020-08-13 19:55:38
  * @LastEditors: BertKing
- * @LastEditTime: 2020-08-13 19:56:30
+ * @LastEditTime: 2020-08-13 21:02:37
  * @FilePath: /undefined/Users/bertking/AnnotationsExplorer/Incremental annotation processing.mdwn
  * @Description: 注解的高阶部分增量更新
 -->
 # Incremental annotation processing(注解的增量更新)
+
+
+# 1. EventBus VS ButterKnife
+对于Android开发者而言，[EventBus](https://github.com/greenrobot/EventBus) 和 [ButterKnife](https://github.com/JakeWharton/butterknife) 绝对不会陌生吧.（当年）两者对于Android开发界，不亚于蒸汽机之于工业革命,微积分之于数学界。(偶感不适者，请立刻关掉网页)
+> PS: 没听过说？WTF？ Are you kidding me? 
+
+这两者内部都是借助于**注解**来实现其功能的。那么这两个优秀的开源框架在处理注解方面有哪些需要我们借鉴or改善的地方呢？
+
+这篇文档的目的正源于此...(要不然我所为何来...)
+
+我们知道**处理注解**离不开**注解解释器(AbstractProceesor)**,我们先来看一下两者在解释器上的区别(只列举关键部分)：
+
+1. [ ButterKnifeProcessor](https://github.com/JakeWharton/butterknife/blob/master/butterknife-compiler/src/main/java/butterknife/compiler/ButterKnifeProcessor.java)
+
+```Java
+@AutoService(Processor.class)
+@IncrementalAnnotationProcessor(IncrementalAnnotationProcessorType.DYNAMIC)
+@SuppressWarnings("NullAway") // TODO fix all these...
+public final class ButterKnifeProcessor extends AbstractProcessor {
+
+    ...
+    // 感兴趣的朋友可以点进去看源码，ButterKnife使用的JavaPoet来生成代码的
+}
+```
+
+
+
+2. [EventBusAnnotationProcessor ](https://github.com/greenrobot/EventBus/blob/master/EventBusAnnotationProcessor/src/org/greenrobot/eventbus/annotationprocessor/EventBusAnnotationProcessor.java)
+
+```Java
+@SupportedAnnotationTypes("org.greenrobot.eventbus.Subscribe")
+@SupportedOptions(value = {"eventBusIndex", "verbose"})
+@IncrementalAnnotationProcessor(AGGREGATING)
+public class EventBusAnnotationProcessor extends AbstractProcessor {
+        ...
+        // 而EventBus使用的是JavaWriter来生成代码的
+}
+```
+
+
+这里我们的讨论重点是：驱动注解解释器起作用的部分。通过上面的源码部分我们可以很清楚的发现：
+> ButterKnife 使用的是Google家的 [AutoService](https://github.com/google/auto/tree/master/service),这个大家应该都很熟悉(业界标志,本项目用的也是它)；
+>
+> EventBus 我们没有找到**AutoService**的身影，但是聪明的读者会发现，两者都有这个注解 **IncrementalAnnotationProcessor**。其中必有玄机。这时我们可以通过[EventBusAnnotationProcessor/build.gradle ](https://github.com/greenrobot/EventBus/blob/master/EventBusAnnotationProcessor/build.gradle)去发现点线索。
+
+```Java
+dependencies {
+    ...
+    def incap = '0.2'
+    compileOnly "net.ltgt.gradle.incap:incap:$incap"
+    annotationProcessor "net.ltgt.gradle.incap:incap-processor:$incap"
+    ...
+}
+```
+
+直接去Github搜一下就能找到它啦—————— [gradle-incap-helper](https://github.com/tbroyer/gradle-incap-helper)
+
+>Helper library and annotation processor for building incremental annotation processors
+>
+> 增量注解解释器的库
+> 
+>Gradle 4.7 comes with some level incremental annotation processing support. Gradle 4.8 goes farther by making it possibly dynamic.
+>
+> Gradle 4.7 带来了一些增量注解处理的支持。Gradle 4.8通过使其可能是动态的更进一步。
+
+
+
+通过[butterknife-compiler](https://github.com/JakeWharton/butterknife/tree/master/butterknife-compiler)可以看出ButterKnife在不久以前才支持动态注解处理，而且也是借助于[gradle-incap-helper](https://github.com/tbroyer/gradle-incap-helper).
+
+
+ PS: ButterKnife这是本着"人无我有，人有我优"的宗旨在办事啊
+ ---
+
+
 
