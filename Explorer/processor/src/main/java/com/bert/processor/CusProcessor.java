@@ -90,6 +90,7 @@ public class CusProcessor extends AbstractProcessor {
 
     /**
      * 获取支持的版本号
+     * 此方法也可以通过注解SupportedSourceVersion来实现
      * @return
      */
     @Override
