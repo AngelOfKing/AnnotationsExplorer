@@ -7,6 +7,9 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 
+import net.ltgt.gradle.incap.IncrementalAnnotationProcessor;
+import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Collections;
@@ -33,6 +36,7 @@ import javax.tools.JavaFileObject;
  * @Description: 自定义的注解处理器
  */
 @AutoService(Processor.class) // 如果不加此行代码，该注解处理器不会生效(JVM在编译时不会加载)
+@IncrementalAnnotationProcessor(IncrementalAnnotationProcessorType.DYNAMIC) //增量编译
 //@SupportedAnnotationTypes("com.bert.annotations.CusAnnotation")
 public class CusProcessor extends AbstractProcessor {
     private Filer filer;
