@@ -3,7 +3,7 @@
  * @version: 
  * @Date: 2020-08-12 11:10:16
  * @LastEditors: BertKing
- * @LastEditTime: 2020-08-13 15:05:34
+ * @LastEditTime: 2020-08-13 16:04:04
  * @FilePath: /undefined/Users/bertking/AnnotationsExplorer/README.md
  * @Description: 
 -->
@@ -91,6 +91,8 @@ public enum RetentionPolicy {
 }
 
 ```
+> PS: 不知道你们纠结过CLASS和RUNTIME的区别没？至少有没有怀疑过CLASS不能被VM通过发射读取呢？稍后会有释惑...
+----
 
 通过上面的信息，我们明确地知道处理注解的武器 -———— **反射**。
 
@@ -145,5 +147,70 @@ public @interface SupportedAnnotationTypes {
 
 ```
 
-> PS :看到**SupportedAnnotationTypes**不禁让我想到**JDK 1.8** 新推出的**元注解(@Repeatable)** 有点鸡肋。
+> PS :看到**SupportedAnnotationTypes**不禁让我想到**JDK 1.8** 新推出的[元注解(@Repeatable](https://docs.oracle.com/javase/specs/jls/se14/html/jls-9.html#jls-9.6.3) 有点鸡肋。
 
+# 4. RetentionPolicy: RUNTIME VS RUNTIME
+我们都知道**RetentionPolicy**有个值:
+1. SOURCE
+2. CLASS
+3. RUNTIME
+
+最容易引发人们争议的是**CLASS** 和**RUNTIME** 莫属。因为你可以将本项目的[CusAnnotation](https://github.com/Bert-King/AnnotationsExplorer/blob/master/Explorer/annotations/src/main/java/com/bert/annotations/CusAnnotation.java) 的 RetentionPolicy 分别设置为两者，进行比较。若无意外，都是可以正常的生成类。WTF？
+
+> PS:在[AnnotationAtRuntime](https://github.com/Bert-King/AnnotationsExplorer/blob/master/Explorer/app/src/main/java/com/bert/annotationsexplorer/AnnotationAtRuntime.java)单独测试时会发现，只有RUNTIME才有效果。
+
+---
+是时候展现真的的技术啦。
+> javap -v(erbose) XXX.java 去查看一下编译后的字节码吧。我确信你会有些许收获的。
+
+有兴趣的朋友，我还是建议亲自试一下，这里直接给出结论
+
+|RetentionPolicy|字节码的内容|
+|---|---|
+|CLASS|RuntimeVisibleAnnotations|
+|RUNTIME|RuntimeVisibleAnnotations|
+
+ 其实关于两者的讨论早已不是什么密码。
+ 
+ 这里给出我所看过的一些讨论：
+ 1. [How do different retention policies affect my annotations?
+](https://stackoverflow.com/questions/3107970/how-do-different-retention-policies-affect-my-annotations?noredirect=1&lq=1)
+
+2. [RetentionPolicy CLASS vs. RUNTIME](https://stackoverflow.com/questions/5971234/retentionpolicy-class-vs-runtime/5971247#5971247)
+
+3. [Java Annotations - looking for an example of RetentionPolicy.CLASS](https://stackoverflow.com/questions/3849593/java-annotations-looking-for-an-example-of-retentionpolicy-class?noredirect=1&lq=1)
+
+
+这里给一些看完讨论后的心得体会：
+
+> 在实际的开发过程中,只有在特殊情况下需要读取字节码而不是类加载器时才会考虑使用CLASS，其他情况下直接使用RUNTIME即可。
+Ironically(具有讽刺意味的是),CLASS才是默认行为。JDK内置注解是不存在RetentionPolicy为CLASS的(Spring貌似挺多的)。
+
+当然啦，对于Android开发者来讲，如果足够细心的话，倒是会发现几个特殊情况(TargetApi,SuppressLint)：
+
+android.annotation包下：
+
+```Java
+@Target({TYPE, FIELD, METHOD, PARAMETER, CONSTRUCTOR, LOCAL_VARIABLE})
+@Retention(RetentionPolicy.CLASS)
+public @interface SuppressLint {
+    /**
+     * The set of warnings (identified by the lint issue id) that should be
+     * ignored by lint. It is not an error to specify an unrecognized name.
+     */
+    String[] value();
+}
+
+
+@Target({TYPE, FIELD, METHOD, PARAMETER, CONSTRUCTOR, LOCAL_VARIABLE})
+@Retention(RetentionPolicy.CLASS)
+public @interface SuppressLint {
+    /**
+     * The set of warnings (identified by the lint issue id) that should be
+     * ignored by lint. It is not an error to specify an unrecognized name.
+     */
+    String[] value();
+}
+```
+---
+乘兴而来乎?...兴尽而归乎？...
