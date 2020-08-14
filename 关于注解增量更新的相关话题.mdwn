@@ -3,14 +3,239 @@
  * @version: 
  * @Date: 2020-08-14 11:30:11
  * @LastEditors: BertKing
- * @LastEditTime: 2020-08-14 11:35:13
+ * @LastEditTime: 2020-08-14 17:51:55
  * @FilePath: /undefined/Users/bertking/AnnotationsExplorer/关于注解增量更新的相关话题.mdwn
- * @Description: 注解增量更新的相关话题
+ * @Description: 关于注解的增量更新的相关话题
 -->
-Starting with Gradle 2.1, it is possible to compile Java incrementally. 
 
-Starting with Gradle 4.7, the incremental compiler also supports incremental annotation processing. Annotation processors need to opt in to this feature, otherwise they will trigger a full recompilation.
+# 关于注解的增量更新的相关话题
 
- Gradle 4.8 goes farther by making it possibly dynamic by making an annotation processor incremental.
+
+
+# 1. 背景
+>Starting with Gradle 2.1, it is possible to compile Java incrementally. 
+>
+> （Gradle 2.1 支持 Java的增量编译。）
+>
+>Starting with Gradle 4.7, the incremental compiler also supports incremental annotation processing. Annotation processors need to opt in to this feature, otherwise they will trigger a full recompilation.
+>
+> (Gradle 4.7的增量编译器 开始支持 注解的增量处理，但是注解解释器则需要进行自定义配置。)
+>
+>Gradle 4.8 goes farther by making it possibly dynamic by making an annotation processor incremental.
+>
+> (Gradle 4.8 支持动态控制增量的注解解释器。)
+
+
+ 总结一下：
+**增量更新**是伴随着Gradle的升级而不断发展的，最新支持Java普通文件的增量编译，而后开始支持**注解(annotation)**，再到现在的支持**注解解释器(annotation processor )**.
+
+以上内容绝非杜撰，均来自于[Gradle的官方文档](https://docs.gradle.org/4.8-rc-2/userguide/java_plugin.html#_making_an_annotation_processor_incremental)
+
+
+
+现在我们再来回顾梳理一下关于**注解**的发展历程：
+> JDK 1.5 开始支持注解(Annotation),而伴随着注解的出现，那自然是需要[注解解释器](https://docs.oracle.com/javase/10/docs/api/javax/annotation/processing/Processor.html)的。
+
+
+---
+上面扯了这么多...不少朋友可能要问 ：何为**增量编译**？，意欲何为？
+
+
+
+
+# 2.增量编译(incremental compilation)
+这里简单为大家举个栗子：我们项目中使用Gradle进行build时，会发现在对应的库下面会生成build文件夹，其内部会生成一些build所产生的文件(最常见的就是class文件)。在开发过程中，如果大家体会过build过程过长的痛苦，那就大概能猜到增量编译的动机啦。详细的信息这里就不在展开去讲啦，有兴趣的朋友可以参考一下Gradle的官方文档的[Incremental annotation processing](https://docs.gradle.org/4.8-rc-2/userguide/java_plugin.html#sec:incremental_compile) 章节。
+
+
+> 增量编译的目标：尽可能少得更改输入类，让build的速度更快；
+
+这里主要是抛砖引玉，最好的永远是阅读官方文档。
+
+# 3. [Making an annotation processor incremental](https://docs.gradle.org/4.8-rc-2/userguide/java_plugin.html#_making_an_annotation_processor_incremental)
+
+我们这里主要还是来讨论，如何设置让 **注解解释器** 进行增量处理。
+
+不可否认，**注解解释器** 的增量也是基于 Java的增量编译。如果对其不太了解，还是请先移步这里：[Incremental Java compilation](https://docs.gradle.org/4.8-rc-2/userguide/java_plugin.html#sec:incremental_compile)
+
+---
+根据Gradle官方文档的描述，我们知道Gradle支持对两种常见的注释处理器进行增量编译：**隔离(Isolating)** 和 **聚合(Aggregating)**。
+
+这里还需要大家注意：**如果处理器只能在运行时决定它是否是增量的，则可以将其声明为动态(Dynamic)**
+
+
+
+细心的朋友可能已经发现,EventBus采用的是**聚合** 方式，而ButterKnife采用的则是**隔离** 的方式且是**动态(Dynamic)** 的。具体信息可以参考：[EventBus VS ButterKnife](https://github.com/Bert-King/AnnotationsExplorer/blob/master/EventBus%20VS%20ButterKnife.mdwn)
+
+
+
+首先我们来看一下如何配置这些动态的选项：
+### 3.1 增量处理的配置方式
+这里需要一些 [关于AbstractProcessor的知识](https://github.com/Bert-King/AnnotationsExplorer#2-%E6%B3%A8%E8%A7%A3%E8%A7%A3%E9%87%8A%E5%99%A8annotation-processor).
+
+简而言之，就是在我们../META-INF/gradle/目录下的注解处理器加上这些字段(isolating,dynamic,aggregating)即可
+
+1. 首先是配置: **隔离** or **动态** (这里直接以官方文档为例)
+
+```Java
+processor/src/main/resources/META-INF/gradle/incremental.annotation.processors
+
+EntityProcessor,isolating  // 隔离模式
+EntityProcessor,aggregating  // 聚合模式
+ServiceRegistryProcessor,dynamic // 动态选项，这里的模式是需要覆写getSupportedOptions()来设置的。
+```
+
+具体到代码中(本项目)：
+```Java
+src/main/java/com/bert/processor/DynamicProcessor.java
+
+@Override
+public Set<String> getSupportedOptions() {
+    return Collections.singleton("org.gradle.annotation.processing.aggregating");//聚合模式
+}
+```
+具体可以参考代码：[DynamicProcessor](https://github.com/Bert-King/AnnotationsExplorer/blob/master/Explorer/processor/src/main/java/com/bert/processor/DynamicProcessor.java)
+
+
+![本项目的运行结果](https://github.com/Bert-King/AnnotationsExplorer/blob/master/processors.png)
+
+
+---
+
+### 3.2 [第三方库 gradle-incap-helper](https://github.com/tbroyer/gradle-incap-helper)
+
+通过上面的了解，我们知道了如何配置注解解释器增量编译，[AutoService]()只帮助我们注册注解解释器的功能，而没有引入增量的相关概念。所以才有了[gradle-incap-helper](https://github.com/tbroyer/gradle-incap-helper)的横空出世。如我们所见，**EventBus** 和 **ButterKnife** 都在使用它。
+
+使用方式(Gradle)：
+```Java
+dependencies {
+    def incap = '0.3'// 当前最新
+    compileOnly("net.ltgt.gradle.incap:incap:${incap}")
+    annotationProcessor("net.ltgt.gradle.incap:incap-processor:${incap}")
+}
+```
+相关的Issues:[A friendly warning about JDK 1. 7 ](https://github.com/tbroyer/gradle-incap-helper/issues/3)
+
+在使用新版本**0.3**的时候,要求是JDK 1.8 版本(内部用的是Stream流式API)，具体可以参看：[IncrementalAnnotationProcessorProcessor](https://github.com/tbroyer/gradle-incap-helper/blob/master/processor/src/main/java/net/ltgt/gradle/incap/processor/IncrementalAnnotationProcessorProcessor.java)
+
+
+这里简要分析一下：
+
+```Java
+@AutoService(Processor.class)
+public class IncrementalAnnotationProcessorProcessor extends AbstractProcessor {
+    // 注意这个getSupportedOptions，似曾相识的感觉？
+private static final String GET_SUPPORTED_OPTIONS = "getSupportedOptions";
+  // 熟悉的陌生人？
+  static final String RESOURCE_FILE = "META-INF/gradle/incremental.annotation.processors";
+
+// 核心方法，必须要看一下
+@Override
+  public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+    try {
+        // 都在 processImpl()中
+      return processImpl(roundEnv);
+    } catch (Exception e) {
+      // We don't allow exceptions of any kind to propagate to the compiler
+      StringWriter writer = new StringWriter();
+      e.printStackTrace(new PrintWriter(writer));
+      fatalError(writer.toString());
+      return true;
+    }
+  }
+  
+  /**
+  * 首先判断Processor有没有加载过，如果加载过，直接生成配置文件，否则检查getSupportOptions() 
+  */
+  private boolean processImpl(RoundEnvironment roundEnv) {
+    if (roundEnv.processingOver()) {
+      generateConfigFiles();
+    } else {
+      processAnnotations(roundEnv);
+    }
+    return true;
+  }
+
+}
+
+// 处理注解部分
+private void processAnnotations(RoundEnvironment roundEnv) {
+    TypeElement processor =
+        processingEnv.getElementUtils().getTypeElement(Processor.class.getCanonicalName());
+    TypeElement abstractProcessor =
+        processingEnv.getElementUtils().getTypeElement(AbstractProcessor.class.getCanonicalName());
+    /*循环遍历注解*/
+    for (Element e : roundEnv.getElementsAnnotatedWith(IncrementalAnnotationProcessor.class)) {
+      if (!checkAnnotatedElement(e, processor)) {
+        continue;
+      }
+      IncrementalAnnotationProcessorType processorType =
+          e.getAnnotation(IncrementalAnnotationProcessor.class).value();
+        // 关键点在这里，如果是DYNAMIC的，则检查getSupportOptions()方法
+      if (processorType == IncrementalAnnotationProcessorType.DYNAMIC
+          && processingEnv.getTypeUtils().isSubtype(e.asType(), abstractProcessor.asType())) {
+        Element getSupportedOptions =
+            processingEnv.getElementUtils().getAllMembers((TypeElement) e).stream()
+                .filter(
+                    method ->
+                        method.getKind() == ElementKind.METHOD
+                            && method.getSimpleName().contentEquals(GET_SUPPORTED_OPTIONS)
+                            && ((ExecutableElement) method).getParameters().isEmpty())
+                .findFirst()
+                .orElseThrow(AssertionError::new);
+        /*如果没有覆写getSupportedOptions()方法则发出警告*/
+        if (abstractProcessor.equals(getSupportedOptions.getEnclosingElement())) {
+          warning(
+              "Dynamic incremental annotation processor should override "
+                  + GET_SUPPORTED_OPTIONS
+                  + "()",
+              e);
+        }
+      }
+      processors.put(
+          processingEnv.getElementUtils().getBinaryName((TypeElement) e).toString(), processorType);
+    }
+  }
+
+
+/**
+* 核心逻辑就在这里，可以发现在声明的目录中写入对应的类型
+*/
+private void generateConfigFiles() {
+    Filer filer = processingEnv.getFiler();
+    try {
+      // TODO: merge with an existing file (in case of incremental compilation, in a
+      // non-incremental-compile-aware environment; e.g. Maven)
+      FileObject fileObject =
+          filer.createResource(StandardLocation.CLASS_OUTPUT, "", RESOURCE_FILE);
+      try (PrintWriter out =
+          new PrintWriter(
+              new OutputStreamWriter(fileObject.openOutputStream(), StandardCharsets.UTF_8))) {
+        // 没错，就是这一句       
+        processors.forEach((processor, type) -> out.println(processor + "," + type.name()));
+        if (out.checkError()) {
+          throw new IOException("Error writing to the file");
+        }
+      }
+    } catch (IOException e) {
+      fatalError("Unable to create " + RESOURCE_FILE + ", " + e);
+    }
+  }
+
+```
+
+> 通过代码进一步验证了我们前面对于其**增量**的配置的具体实现逻辑。
+
+现在我们已经知道了怎么实现*增量的配置**。那么现在问题来了，我们如何来挑选适合自己的方式呢？
+
+ 聚合 or 隔离 ？动乎哉？
+---
+
+
+
+
+
+
+
+
 
  
