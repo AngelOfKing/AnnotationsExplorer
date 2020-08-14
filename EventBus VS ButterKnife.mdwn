@@ -3,12 +3,10 @@
  * @version: 
  * @Date: 2020-08-13 19:55:38
  * @LastEditors: BertKing
- * @LastEditTime: 2020-08-13 21:02:37
+ * @LastEditTime: 2020-08-14 11:22:01
  * @FilePath: /undefined/Users/bertking/AnnotationsExplorer/Incremental annotation processing.mdwn
- * @Description: 注解的高阶部分增量更新
+ * @Description: 从EventBus 和 ButterKnife 中去深入了解 注解
 -->
-# Incremental annotation processing(注解的增量更新)
-
 
 # 1. EventBus VS ButterKnife
 对于Android开发者而言，[EventBus](https://github.com/greenrobot/EventBus) 和 [ButterKnife](https://github.com/JakeWharton/butterknife) 绝对不会陌生吧.（当年）两者对于Android开发界，不亚于蒸汽机之于工业革命,微积分之于数学界。(偶感不适者，请立刻关掉网页)
@@ -69,13 +67,16 @@ dependencies {
 >
 > 增量注解解释器的库
 > 
->Gradle 4.7 comes with some level incremental annotation processing support. Gradle 4.8 goes farther by making it possibly dynamic.
+>[Gradle 4.7](https://docs.gradle.org/4.7/release-notes.html) comes with some level incremental annotation processing support. [Gradle 4.8](https://docs.gradle.org/4.8-rc-2/userguide/java_plugin.html#_making_an_annotation_processor_incremental) goes farther by making it possibly dynamic.
 >
 > Gradle 4.7 带来了一些增量注解处理的支持。Gradle 4.8通过使其可能是动态的更进一步。
 
 
 
 通过[butterknife-compiler](https://github.com/JakeWharton/butterknife/tree/master/butterknife-compiler)可以看出ButterKnife在不久以前才支持动态注解处理，而且也是借助于[gradle-incap-helper](https://github.com/tbroyer/gradle-incap-helper).
+
+注解 **@IncrementalAnnotationProcessor** 就是来自[gradle-incap-helper](https://github.com/tbroyer/gradle-incap-helper) 库中。我们通过上面的地方可以看出两者在该注解的参数是不相同的。那么这到底是怎么一回事呢？
+
 
 
  PS: ButterKnife这是本着"人无我有，人有我优"的宗旨在办事啊
