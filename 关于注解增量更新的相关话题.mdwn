@@ -1,0 +1,16 @@
+<!--
+ * @Author: BertKing
+ * @version: 
+ * @Date: 2020-08-14 11:30:11
+ * @LastEditors: BertKing
+ * @LastEditTime: 2020-08-14 11:35:13
+ * @FilePath: /undefined/Users/bertking/AnnotationsExplorer/关于注解增量更新的相关话题.mdwn
+ * @Description: 注解增量更新的相关话题
+-->
+Starting with Gradle 2.1, it is possible to compile Java incrementally. 
+
+Starting with Gradle 4.7, the incremental compiler also supports incremental annotation processing. Annotation processors need to opt in to this feature, otherwise they will trigger a full recompilation.
+
+ Gradle 4.8 goes farther by making it possibly dynamic by making an annotation processor incremental.
+
+ 
