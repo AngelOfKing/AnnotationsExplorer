@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
-
+apply plugin: 'com.jakewharton.butterknife'
 
 android {
     compileSdkVersion 29
@@ -37,10 +37,15 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.3.1'
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
-    kapt project(path: ':processor') // 这里需要注意
+    kapt project(path: ':processor') // Using Kotlin, replace annotationProcessor with kapt  and vice versa.
     implementation project(path: ':annotations')
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    // 其实看ViewBinding或者DataBinding也是一样的，只不过ButterKnife更接地气一些
+    implementation 'com.jakewharton:butterknife:10.2.3'
+    kapt 'com.jakewharton:butterknife-compiler:10.2.3'// Using Kotlin, replace annotationProcessor with kapt  and vice versa.
+
+    implementation 'org.greenrobot:eventbus:3.2.0'
 
 }
