@@ -7,9 +7,6 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 
-import net.ltgt.gradle.incap.IncrementalAnnotationProcessor;
-import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType;
-
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Collections;
@@ -20,8 +17,6 @@ import javax.annotation.processing.Filer;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.annotation.processing.SupportedOptions;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
@@ -37,7 +32,6 @@ import javax.tools.JavaFileObject;
  * @Description: 自定义的注解处理器
  */
 @AutoService(Processor.class) // 如果不加此行代码，该注解处理器不会生效(JVM在编译时不会加载)
-//@SupportedOptions({"org.gradle.annotation.processing.isolating"})
 //@SupportedAnnotationTypes("com.bert.annotations.CusAnnotation")
 public class CusProcessor extends AbstractProcessor {
     private Filer filer;
