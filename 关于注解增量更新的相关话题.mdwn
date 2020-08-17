@@ -3,7 +3,7 @@
  * @version: 
  * @Date: 2020-08-14 11:30:11
  * @LastEditors: BertKing
- * @LastEditTime: 2020-08-17 16:23:05
+ * @LastEditTime: 2020-08-17 19:38:43
  * @FilePath: /undefined/Users/bertking/Documents/GitHub/AnnotationsExplorer/关于注解增量更新的相关话题.mdwn
  * @Description: 关于注解的增量更新的相关话题
 -->
@@ -227,7 +227,7 @@ private void generateConfigFiles() {
 
 现在我们已经知道了怎么实现*增量的配置**。那么现在问题来了，我们如何来挑选适合自己的方式呢？
 
- 隔离(Isolating) or 聚合(Aggregating) ？动(Dynamic)乎哉？
+ [隔离(Isolating) or 聚合(Aggregating) ？动(Dynamic)乎哉？](https://github.com/Bert-King/AnnotationsExplorer)
 ---
 
 
