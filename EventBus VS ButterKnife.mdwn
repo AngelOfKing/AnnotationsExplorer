@@ -8,7 +8,7 @@
  * @Description: 从EventBus 和 ButterKnife 中去深入了解 注解
 -->
 
-# 1. EventBus VS ButterKnife
+#  EventBus VS ButterKnife
 对于Android开发者而言，[EventBus](https://github.com/greenrobot/EventBus) 和 [ButterKnife](https://github.com/JakeWharton/butterknife) 绝对不会陌生吧.（当年）两者对于Android开发界，不亚于蒸汽机之于工业革命,微积分之于数学界。(偶感不适者，请立刻关掉网页)
 > PS: 没听过说？WTF？ Are you kidding me? 
 
