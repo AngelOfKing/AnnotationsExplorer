@@ -2,10 +2,7 @@ package com.bert.annotationsexplorer
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.TextView
-import butterknife.BindView
 import com.bert.annotations.CusAnnotation
-import com.bert.annotationsexplorer.R2.layout.activity_main
 import com.bert.annotationsexplorer.beans.MsgEvent
 import kotlinx.android.synthetic.main.activity_main.*
 import org.greenrobot.eventbus.EventBus
