@@ -1,0 +1,215 @@
+<!--
+ * @Author: BertKing
+ * @version: 
+ * @Date: 2020-08-17 16:19:54
+ * @LastEditors: BertKing
+ * @LastEditTime: 2020-08-17 17:54:23
+ * @FilePath: /undefined/Users/bertking/Documents/GitHub/AnnotationsExplorer/Isolating or Aggregating.mdwn
+ * @Description: 
+-->
+前文提到注解解释器增量的问题，我们知道这分为两种情况：
+1. [隔离(Isolating)](https://docs.gradle.org/4.8-rc-2/userguide/java_plugin.html#_isolating_annotation_processors)
+2. [聚合(Aggregating)](https://docs.gradle.org/4.8-rc-2/userguide/java_plugin.html#_aggregating_annotation_processors)
+> 这两种情况，都还具有 **动态(dynamic)** 的配置项
+
+
+在开发中，我们如何选择呢？我们今天就来讨论一下。
+
+# 1. [聚合注解解释器(Aggregating annotation processors)](https://docs.gradle.org/4.8-rc-2/userguide/java_plugin.html#_aggregating_annotation_processors)
+
+
+顾名思义，这种模式就是将多个源文件聚合为一个或者多个输出文件或者验证信息。
+
+---
+
+### 1.1 实例探讨
+这里拿官例说明一下:
+```Java
+processor/src/main/java/ServiceRegistryProcessor.java
+// 使用Filer API 生成一个ServiceRegistry文件
+JavaFileObject serviceRegistry = filer.createSourceFile("ServiceRegistry");
+Writer writer = serviceRegistry.openWriter();
+writer.write("public class ServiceRegistry {");
+// 遍历注解元素，然后将其全部写入到ServiceRegistry文件。
+for (Element service : roundEnv.getElementsAnnotatedWith(serviceAnnotation)) {
+    addServiceCreationMethod(writer, (TypeElement) service);
+}
+writer.write("}");
+writer.close();
+```
+
+根据这个例子，我们能体会到**聚合**的概念。通过 [前面的文章](https://github.com/Bert-King/AnnotationsExplorer/blob/master/EventBus%20VS%20ButterKnife.mdwn),我们知道EventBus就是使用的这种模式。具体代码在[EventBusAnnotationProcessor](https://github.com/greenrobot/EventBus/blob/master/EventBusAnnotationProcessor/src/org/greenrobot/eventbus/annotationprocessor/EventBusAnnotationProcessor.java)中,这里简单捋一下其实现思路：
+
+```Java
+
+@SupportedAnnotationTypes("org.greenrobot.eventbus.Subscribe")
+@SupportedOptions(value = {"eventBusIndex", "verbose"})
+@IncrementalAnnotationProcessor(AGGREGATING)
+public class EventBusAnnotationProcessor extends AbstractProcessor {
+
+/** Found subscriber methods for a class (without superclasses). */
+ private final ListMap<TypeElement, ExecutableElement> methodsByClass = new ListMap<>();
+
+@Override
+    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
+
+        ...
+            /*将注解方法(@Subscribe)都缓存起来*/
+            collectSubscribers(annotations, env, messager);
+            checkForSubscribersToSkip(messager, indexPackage);
+            /*如果有注解方法(@Subscribe),则创建文件*/
+            if (!methodsByClass.isEmpty()) {
+                createInfoIndexFile(index);
+            } else {
+                messager.printMessage(Diagnostic.Kind.WARNING, "No @Subscribe annotations found");
+            }
+        ...
+    }
+
+}
+
+
+ private void createInfoIndexFile(String index) {
+        BufferedWriter writer = null;
+        try {  
+            // 跟官方示例一样，创建一个文件
+            JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(index);
+            int period = index.lastIndexOf('.');
+            String myPackage = period > 0 ? index.substring(0, period) : null;
+            String clazz = index.substring(period + 1);
+            writer = new BufferedWriter(sourceFile.openWriter());
+            if (myPackage != null) {
+                writer.write("package " + myPackage + ";\n\n");
+            }
+            ...
+            // 关键方法
+            writeIndexLines(writer, myPackage);
+           
+            ...
+        } catch (IOException e) {
+            throw new RuntimeException("Could not write source for " + index, e);
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    //Silent
+                }
+            }
+        }
+    }
+
+
+ private void writeIndexLines(BufferedWriter writer, String myPackage) throws IOException {
+        // 遍历缓存(methodsByClass),然后继续写入到上面生成的文件。
+        for (TypeElement subscriberTypeElement : methodsByClass.keySet()) {
+            if (classesToSkip.contains(subscriberTypeElement)) {
+                continue;
+            }
+
+            String subscriberClass = getClassString(subscriberTypeElement, myPackage);
+            if (isVisible(myPackage, subscriberTypeElement)) {
+                writeLine(writer, 2,
+                        "putIndex(new SimpleSubscriberInfo(" + subscriberClass + ".class,",
+                        "true,", "new SubscriberMethodInfo[] {");
+                List<ExecutableElement> methods = methodsByClass.get(subscriberTypeElement);
+                writeCreateSubscriberMethods(writer, methods, "new SubscriberMethodInfo", myPackage);
+                writer.write("        }));\n\n");
+            } else {
+                writer.write("        // Subscriber not visible to index: " + subscriberClass + "\n");
+            }
+        }
+    }
+
+
+```
+> 总结：EventBus采用的是**聚合**方式，将所有被(@Subscribe)注解方法都写入到同一个文件中。
+---
+
+### 1.2 聚合的局限性
+聚合模式下，注解解释器只能处理**CLASS or RUNTIME**类型的注解；另外只在用户传递-parameters编译器参数时读取参数名。
+
+Gradle将始终重新处理（但不是重新编译）处理器注册的所有带注释的文件并总是重新编译处理器生成的所有文件( 话说，一般不都是一个吗？)。
+
+
+---
+
+
+
+# 2. [隔离注解解释器(Isolating annotation processors)](https://docs.gradle.org/4.8-rc-2/userguide/java_plugin.html#_isolating_annotation_processors)
+
+这种模式非常快，单独查看每个独立的注解元素并为其创建**文件或者验证信息**。
+
+### 2.1 示例说明
+
+这里我们就拿ButterKnife举例
+
+```Java
+@AutoService(Processor.class)
+@IncrementalAnnotationProcessor(IncrementalAnnotationProcessorType.DYNAMIC)
+@SuppressWarnings("NullAway") // TODO fix all these...
+public final class ButterKnifeProcessor extends AbstractProcessor {
+
+/* 设置动态选项必定要重写该方法，并在此方法中选择模式：此处可以看到是"隔离"模式*/
+ @Override public Set<String> getSupportedOptions() {
+    ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+    builder.add(OPTION_SDK_INT, OPTION_DEBUGGABLE);
+    if (trees != null) {
+      builder.add(IncrementalAnnotationProcessorType.ISOLATING.getProcessorOption());
+    }
+    return builder.build();
+  }
+    /*需要注意的是ButterKnife使用的是JavaPoet库来生成源文件的*/
+  @Override public boolean process(Set<? extends TypeElement> elements, RoundEnvironment env) {
+    Map<TypeElement, BindingSet> bindingMap = findAndParseTargets(env);
+    // 遍历注解并对应生成独立的文件
+    for (Map.Entry<TypeElement, BindingSet> entry : bindingMap.entrySet()) {
+      TypeElement typeElement = entry.getKey();
+      BindingSet binding = entry.getValue();
+
+      JavaFile javaFile = binding.brewJava(sdk, debuggable);
+      try {
+        javaFile.writeTo(filer);
+      } catch (IOException e) {
+        error(typeElement, "Unable to write binding for type %s: %s", typeElement, e.getMessage());
+      }
+
+    }
+
+    return false;
+  }
+
+}
+```
+
+
+
+
+> ButterKnife用的是『隔离模式』的动态选项，并使用JavaPoet(基于JavaFiler API)来生成源文件。
+
+
+
+### 2.2 隔离模式的局限性
+>如果大家看官方文档的话，会遇到**AST**，其全称为Abstract Syntax Tree(抽象语法),简称 AST，它是源代码语法结构的一种抽象表示。它以树状的形式表现编程语言的语法结构，树上的每个节点都表示源代码中的一种结构。如果大家看过[Java虚拟机规范(The Java® Virtual Machine Specification)](https://docs.oracle.com/javase/specs/jvms/se14/html/index.html),就会明白无论是源文件还是Class文件，虚拟机都对其进行了严格的规范限制。
+
+现在进入正题，看一下隔离模式。
+
+这种模式必须根据AST所能访问到的信息为注解类型做出决策(如代码生成，验证消息等...)，这意味着我们可以分析类型的父类，方法返回类型，注释等，甚至可以进行传递性分析。但是我们不能基于RoundEnvironment中不相关的元素做出决策,这样做很少文件会被重新编译而导致失败。(PS:如果您的处理器需要基于其他无关元素的组合来做出决策，请将其标记为“聚合”。)
+
+它们必须为使用Filer API生成的每个文件提供一个源元素。如果提供零个或多个源元素，Gradle将重新编译所有源文件。(简而言之，就是One to One)
+
+
+另外，如果有一个源文件被重新编译，Gradle将会重新编译其生成的所有文件.
+当一个源文件被删除，Gradle将会删除它所产生的所有文件。
+
+(忽有：『兔死狗烹』之感)
+
+
+
+# 3. 动态选项
+>If your processor can only decide at runtime whether it is incremental or not, you can declare it as "dynamic" in the META-INF descriptor and return its true type at runtime using the Processor#getSupportedOptions() method.
+
+简而言之，就是如果我们的注解解释器只在Runtime时决定是否增量，就加上『dynamic』。很显然，ButterKnife已经应用上啦。
+
+
+
